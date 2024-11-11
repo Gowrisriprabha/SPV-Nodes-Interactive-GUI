@@ -7,3 +7,4 @@ def spv_verification_process(spv_instance, transaction_id, block, delay=1):
     else:
         print(f"Transaction {transaction_id} not found.")
         return False, None
+        
