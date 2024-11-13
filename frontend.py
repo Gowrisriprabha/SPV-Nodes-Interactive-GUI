@@ -7,7 +7,8 @@ class SPVGUI:
         self.root = root
         self.root.title("SPV Verification Process")
         self.root.geometry("800x600")
-        self.set_background_image("image.jpg")
+        self.set_background_image("C:\\Users\\Gowri sri\\OneDrive\\Desktop\\blockchain project\\SPV-Nodes-Interactive-GUI\\image.jpg")
+
         self.create_heading()
         self.main_container = tk.Frame(self.root, bg='white', padx=30, pady=30)
         self.main_container.pack(expand=True)
