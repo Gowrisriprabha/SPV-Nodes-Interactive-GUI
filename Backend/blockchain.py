@@ -1,7 +1,6 @@
-import hashlib
 from datetime import datetime
-from block import Block
 from merkle_tree import MerkleTree
+from block import Block
 
 class Blockchain:
     def __init__(self, difficulty=4):
@@ -29,3 +28,15 @@ class Blockchain:
 
     def add_block_to_chain(self, block):
         self.chain.append(block)
+
+    def get_block_by_txid(self, txid):
+        """Get the block containing a transaction by txid"""
+        for block in self.chain:
+            for transaction in block.transactions:
+                if transaction.txid == txid:
+                    return block
+        return None
+
+    def get_merkle_root(self, block):
+        """Returns the Merkle root for the given block."""
+        return block.header["merkle_root"]

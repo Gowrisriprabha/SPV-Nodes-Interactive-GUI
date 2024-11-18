@@ -4,7 +4,11 @@ class SPVClient:
     def __init__(self, blockchain):
         self.blockchain = blockchain
 
-    def verify_transaction(self, block, txid):
+    def verify_transaction(self, txid):
+        block = self.blockchain.get_block_by_txid(txid)
+        if block is None:
+            return {"error": "Transaction not found in any block"}
+
         tx_index = next((i for i, tx in enumerate(block.transactions) if tx.txid == txid), None)
         if tx_index is None:
             return {"error": "Transaction not found in block"}
@@ -46,3 +50,4 @@ class SPVClient:
             combined = hash_val + sibling if hash_val < sibling else sibling + hash_val
             hash_val = MerkleTree.double_hash(combined)
         return hash_val == merkle_root
+
