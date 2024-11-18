@@ -2,12 +2,15 @@ import tkinter as tk
 from tkinter import messagebox
 from PIL import Image, ImageTk, ImageFilter, ImageEnhance
 
+ADD_BLOCK_URL = "http://127.0.0.1:5000/add_block"
+VERIFY_TRANSACTION_URL = "http://127.0.0.1:5000/verify_transaction"
+
 class SPVGUI:
     def __init__(self, root):
         self.root = root
         self.root.title("SPV Verification Process")
         self.root.geometry("800x600")
-        self.set_background_image("C:\\Users\\Gowri sri\\OneDrive\\Desktop\\blockchain project\\SPV-Nodes-Interactive-GUI\\image.jpg")
+        self.set_background_image("D:\SPV-Nodes-Interactive-GUI\image.jpg")
 
         self.create_heading()
         self.main_container = tk.Frame(self.root, bg='white', padx=30, pady=30)
@@ -87,14 +90,34 @@ class SPVGUI:
     def simulate_spv_verification(self):
         transaction = self.transaction_details.get()
         block = self.block_id.get()
+
         if not transaction or not block:
             messagebox.showerror("Input Error", "Please provide both transaction details and block ID.")
             return
-        self.network_display.insert(tk.END, f"SPV Client: Verifying Transaction {transaction} in Block {block}...\n")
-        self.network_display.insert(tk.END, "SPV Client: Requesting Merkle Proof from Full Node...\n")
-        self.network_display.insert(tk.END, "Full Node: Sending Merkle Proof for Transaction...\n")
-        self.network_display.insert(tk.END, "SPV Client: Verifying Transaction with Merkle Proof...\n")
-        self.network_display.insert(tk.END, "SPV Client: Transaction Verified Successfully!\n\n")
+
+        try:
+            response = requests.post(VERIFY_TRANSACTION_URL, json={"txid": transaction})
+            if response.status_code == 200:
+                result = response.json()
+                if result["verified"]:
+                    messagebox.showinfo("Verification Success", "Transaction Verified Successfully!")
+                else:
+                    messagebox.showerror("Verification Failed", "Transaction Verification Failed!")
+            else:
+                messagebox.showerror("Error", f"Server Error: {response.text}")
+        except Exception as e:
+            messagebox.showerror("Error", str(e))
+
+    def generate_merkle_tree(self):
+        try:
+            # Example of interacting with the backend
+            response = requests.post(ADD_BLOCK_URL, json={"transactions": []})
+            if response.status_code == 200:
+                messagebox.showinfo("Merkle Tree", "Merkle Tree Generated and Block Added!")
+            else:
+                messagebox.showerror("Error", f"Server Error: {response.text}")
+        except Exception as e:
+            messagebox.showerror("Error", str(e))
 
     def simulate_network_communication(self):
         self.network_display.insert(tk.END, "SPV Client: Sending Request for Block Header...\n")
@@ -102,12 +125,6 @@ class SPVGUI:
         self.network_display.insert(tk.END, "SPV Client: Requesting Merkle Proof for Transaction...\n")
         self.network_display.insert(tk.END, "Full Node: Sending Merkle Proof...\n")
         self.network_display.insert(tk.END, "SPV Client: Transaction Verification Completed!\n\n")
-
-    def generate_merkle_tree(self):
-        self.network_display.insert(tk.END, "Merkle Tree: Generating Merkle Tree...\n")
-        self.network_display.insert(tk.END, "Merkle Tree: Hashing Transaction Data...\n")
-        self.network_display.insert(tk.END, "Merkle Tree: Combining Hashes...\n")
-        self.network_display.insert(tk.END, "Merkle Tree: Merkle Root Created!\n\n")
 
 if __name__ == "__main__":
     root = tk.Tk()
