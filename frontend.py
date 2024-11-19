@@ -2,6 +2,10 @@ import tkinter as tk
 from tkinter import messagebox
 from tkinter import ttk
 import requests
+import pydot
+import graphviz
+from graphviz import Digraph
+from graphviz import sources
 from PIL import Image, ImageTk, ImageFilter, ImageEnhance
 import networkx as nx
 from matplotlib.figure import Figure
@@ -10,13 +14,15 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 ADD_BLOCK_URL = "http://127.0.0.1:5000/create_block"
 VERIFY_TRANSACTION_URL = "http://127.0.0.1:5000/verify_transaction"
 
+#graphviz.backend.CALLBACKS['dot'] = r'C:\Users\Amodini\anaconda3\Lib\site-packages\dot'
+
 class SPVGUI:
     def __init__(self, root):
         self.root = root
         self.root.title("SPV Verification Process")
         self.root.geometry("1200x850")
         self.root.configure(bg="#1e1e2e")
-        self.set_background_image(r"C:\Users\Gowri sri\OneDrive\Desktop\New folder\SPV-Nodes-Interactive-GUI\image.jpg")
+        self.set_background_image(r"D:\SPV-Nodes-Interactive-GUI\image.jpg")
 
         self.style_buttons()
 
@@ -174,6 +180,7 @@ class SPVGUI:
             transactions = ["tx1", "tx2", "tx3", "tx4"]
             G = nx.DiGraph()
 
+            # Build the Merkle tree
             while len(transactions) > 1:
                 new_level = []
                 for i in range(0, len(transactions), 2):
@@ -185,13 +192,26 @@ class SPVGUI:
                     G.add_edge(parent, right)
                 transactions = new_level
 
+            # Create a graph for visualization using pydot
+            pydot_graph = pydot.Dot(graph_type='digraph')
+
+            # Add nodes and edges to the pydot graph
+            for node in G.nodes:
+                pydot_graph.add_node(pydot.Node(node))
+            for u, v in G.edges:
+                pydot_graph.add_edge(pydot.Edge(u, v))
+
+            # Generate a visualization using pydot
+            graph_image = pydot_graph.create_png()
+
+            # Display the image in Tkinter canvas
             fig = Figure(figsize=(8, 6))
             ax = fig.add_subplot(111)
-            pos = nx.nx_agraph.graphviz_layout(G, prog="dot")
-            nx.draw(G, pos, with_labels=True, ax=ax, font_size=10, node_size=3000, node_color="skyblue")
+            ax.imshow(graph_image)
+            ax.axis('off')
             canvas = FigureCanvasTkAgg(fig, master=self.canvas_frame)
-            canvas.get_tk_widget().pack(fill="both", expand=True)
             canvas.draw()
+            canvas.get_tk_widget().pack(fill="both", expand=True)
 
         except Exception as e:
             messagebox.showerror("Error", str(e))
@@ -221,54 +241,26 @@ class SPVGUI:
                 else:
                     messagebox.showerror("Verification Failed", "Transaction Verification Failed!")
             else:
-                messagebox.showerror("API Error", "Failed to connect to the API.")
+                messagebox.showerror("Error", "Doesn't exist")
 
         except Exception as e:
             messagebox.showerror("Error", str(e))
 
-    def generate_merkle_tree(self):
-        transactions = ["tx1", "tx2", "tx3", "tx4"]
-        G = nx.DiGraph()
-
-        while len(transactions) > 1:
-            new_level = []
-            for i in range(0, len(transactions), 2):
-                left = transactions[i]
-                right = transactions[i + 1] if i + 1 < len(transactions) else left
-                parent = f"Hash({left}+{right})"
-                new_level.append(parent)
-                G.add_edge(parent, left)
-                G.add_edge(parent, right)
-            transactions = new_level
-
-        fig = Figure(figsize=(8, 6))
-        ax = fig.add_subplot(111)
-        pos = nx.nx_agraph.graphviz_layout(G, prog="dot")
-        nx.draw(G, pos, with_labels=True, ax=ax, font_weight="bold", node_size=2000, node_color="lightblue")
-        canvas = FigureCanvasTkAgg(fig, master=self.canvas_frame)
-        canvas.draw()
-        canvas.get_tk_widget().pack(fill="both", expand=True)
-
-
-
     def simulate_network_communication(self):
-        self.network_display.insert(tk.END, "Network communication initiated...\n")
-        self.network_display.insert(tk.END, "Verifying transactions...\n")
-        self.network_display.insert(tk.END, "Block added to the blockchain.\n")
-        self.network_display.insert(tk.END, "Merkle tree generated.\n")
+        # Simulate network communication and update logs
+        self.network_display.insert(tk.END, "Starting communication...\n")
+        self.network_display.insert(tk.END, "Communication successful!\n")
+        self.network_display.yview(tk.END)
 
     def mouse_wheel_scroll(self, event):
-        if event.delta < 0:
-            self.canvas.yview_scroll(3, "units")
+        if event.delta > 0:
+            self.canvas.yview_scroll(-1, "units")
         else:
-            self.canvas.yview_scroll(-3, "units")
+            self.canvas.yview_scroll(1, "units")
 
-
-def run_spv_gui():
+def run_gui():
     root = tk.Tk()
-    app = SPVGUI(root)
+    gui = SPVGUI(root)
     root.mainloop()
 
-
-if __name__ == "__main__":
-    run_spv_gui()
+run_gui()
