@@ -11,7 +11,7 @@ class SPVGUI:
         self.root = root
         self.root.title("SPV Verification Process")
         self.root.geometry("800x600")
-        self.set_background_image(r"C:\Users\Gowri sri\OneDrive\Desktop\New folder\SPV-Nodes-Interactive-GUI\image.jpg")
+        self.set_background_image(r"D:\SPV-Nodes-Interactive-GUI\image.jpg")
 
         self.create_heading()
         self.main_container = tk.Frame(self.root, bg='white', padx=30, pady=30)
@@ -47,7 +47,7 @@ class SPVGUI:
     def create_spv_verification_section(self):
         spv_frame = tk.LabelFrame(self.main_container, text="SPV Verification Process", padx=10, pady=10, bg='white')
         spv_frame.pack(padx=20, pady=10, fill="both")
-        tk.Label(spv_frame, text="Enter Transaction Details:", bg='white').grid(row=0, column=0, padx=5, pady=5)
+        tk.Label(spv_frame, text="Enter Transaction ID:", bg='white').grid(row=0, column=0, padx=5, pady=5)
         self.transaction_details = tk.Entry(spv_frame, width=40)
         self.transaction_details.grid(row=0, column=1, padx=5, pady=5)
         tk.Label(spv_frame, text="Select Block ID:", bg='white').grid(row=1, column=0, padx=5, pady=5)
@@ -76,12 +76,18 @@ class SPVGUI:
         transaction = self.transaction_details.get().strip()
         block = self.block_id.get().strip()
 
-        if not transaction or not block:
-            messagebox.showerror("Input Error", "Please provide both transaction details and block ID.")
+        if not transaction:
+            messagebox.showerror("Input Error", "Please provide the Transaction ID.")
             return
 
         try:
-            response = requests.post(VERIFY_TRANSACTION_URL, json={"txid": transaction, "block": block})
+            # Construct the GET request URL with query parameters
+            params = {"tx_id": transaction}
+            if block:
+                params["block_index"] = int(block)
+
+            response = requests.get(VERIFY_TRANSACTION_URL, params=params)
+
             if response.status_code == 200:
                 result = response.json()
                 if result.get("verified"):
@@ -94,6 +100,7 @@ class SPVGUI:
         except Exception as e:
             print(f"Error during SPV Verification: {str(e)}")
             messagebox.showerror("Error", str(e))
+
 
     def generate_merkle_tree(self):
         try:
