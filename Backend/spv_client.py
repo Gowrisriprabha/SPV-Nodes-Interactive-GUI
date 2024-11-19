@@ -17,8 +17,13 @@ class SPVClient:
                   Merkle root, and verification status.
         """
         # Locate transaction within the block
+        print("Block being passed:", block)  # Debugging line
+        print("Transactions in block:", block.transactions)
+        print("Verifying Transaction ID:", txid)
+        print("Block Transactions:", [tx.txid for tx in block.transactions])
         tx_index = next((i for i, tx in enumerate(block.transactions) if tx.txid == txid), None)
         if tx_index is None:
+            print("hello")
             return {
                 "error": "Transaction not found in block",
                 "verified": False,

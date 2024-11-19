@@ -1,4 +1,7 @@
+import json
+import time
 from flask import Flask, request, jsonify
+from block import Block
 from blockchain import Blockchain
 from transaction import Transaction
 from spv_client import SPVClient
@@ -10,11 +13,83 @@ app = Flask(__name__)
 blockchain = Blockchain()
 spv_client = SPVClient(blockchain)
 
+# Function to load the blockchain from a JSON file
+def load_blockchain_data():
+    try:
+        with open('blockchain_data.json', 'r') as file:
+            data = json.load(file)
+            blockchain.chain = [Block.from_dict(block) for block in data]
+            print(f"Blockchain loaded from blockchain_data.json with {len(blockchain.chain)} blocks.")
+    except FileNotFoundError:
+        print("No existing blockchain data found. Starting fresh.")
+        blockchain.chain = []  # Start with an empty chain if the file doesn't exist
+
+# Function to save the blockchain to a JSON file
+def save_blockchain_data():
+    with open('blockchain_data.json', 'w') as file:
+        json.dump([block.to_dict() for block in blockchain.chain], file)
+        print(f"Blockchain saved to blockchain_data.json with {len(blockchain.chain)} blocks.")
+
+def populate_blockchain():
+    transactions = [
+        {"txid": "tx1", "sender": "Alice", "receiver": "Bob", "amount": 50, "timestamp": int(time.time())},
+        {"txid": "tx2", "sender": "Charlie", "receiver": "Diana", "amount": 75, "timestamp": int(time.time())},
+    ]
+
+    # Create Transaction objects
+    transaction_objects = [
+        Transaction(
+            txid=tx["txid"],
+            inputs=tx.get("inputs", []),
+            outputs=tx.get("outputs", [])
+        )
+        for tx in transactions
+    ]
+
+    # Previous hash: Hash of the last block in the chain (if chain exists), otherwise for the genesis block
+    if blockchain.chain:
+        previous_hash = blockchain.chain[-1].block_hash
+    else:
+        previous_hash = "0" * 64  # All zeros for the genesis block
+
+    # Current timestamp
+    timestamp = int(time.time())
+
+    # Calculate Merkle root for the transactions
+    merkle_root = blockchain.calculate_merkle_root(transaction_objects)
+
+    # Block data dictionary for hash calculation
+    block_data = {
+        "index": len(blockchain.chain),
+        "previous_hash": previous_hash,
+        "transactions": transactions,  # List of transaction dictionaries
+        "timestamp": timestamp,
+        "merkle_root": merkle_root,
+    }
+
+    # Calculate the block hash
+    block_hash = blockchain.calculate_block_hash(block_data)
+
+    print(f"Transactions in the block: {transactions}")
+    # Create the block with all required parameters
+    block = blockchain.create_block(transaction_objects, previous_hash, timestamp, merkle_root, block_hash)
+
+    # Add the block to the blockchain
+    blockchain.add_block_to_chain(block)
+    print(f"Blockchain after initialization: {blockchain.chain}")
+    print(f"Block added to the blockchain: {block}")
+
+
+# Call the function to load blockchain data at the start of the app
+populate_blockchain() 
+print("Loaded")
+
 @app.route('/create_block', methods=['POST'])
 def create_block():
     try:
         # Parse JSON input
         data = request.json
+        print(f"Received data: {data}")
         transactions = [
             Transaction(
                 txid=tx["txid"],
@@ -23,11 +98,16 @@ def create_block():
             )
             for tx in data.get("transactions", [])
         ]
+        print(f"Parsed transactions: {transactions}") 
         previous_hash = data.get("previous_hash", blockchain.chain[-1].header["block_hash"])
+        print(f"Previous hash: {previous_hash}")
 
         # Create and add the block
         block = blockchain.create_block(transactions=transactions, previous_hash=previous_hash)
         blockchain.add_block_to_chain(block)
+
+        # Save blockchain data after creating the block
+        save_blockchain_data()
 
         return jsonify({
             "message": "Block created successfully",
@@ -42,27 +122,27 @@ def create_block():
 
 @app.route('/verify_transaction', methods=['GET'])
 def verify_transaction():
-    try:
-        # Parse query parameters
-        txid = request.args.get("tx_id")
-        block_index = request.args.get("block_index", type=int)
+    tx_id = request.args.get('tx_id')
+    block_index = int(request.args.get('block_index'))
 
-        if not txid:
-            return jsonify({"error": "Transaction ID (tx_id) is required"}), 400
+    # Check block index range
+    if block_index >= len(blockchain.chain):
+        return {"error": "Block index out of range"}, 400
 
-        # Get the block by index or default to the latest block
-        if block_index is not None:
-            if block_index < 0 or block_index >= len(blockchain.chain):
-                return jsonify({"error": f"Block index {block_index} is out of range"}), 404
-            block = blockchain.chain[block_index]
-        else:
-            block = blockchain.chain[-1]
+    # Retrieve block and ensure it's not empty
+    block = blockchain.chain[block_index]
+    print(f"Retrieved block: {block}")
 
-        # Verify the transaction in the block
-        result = spv_client.verify_transaction(txid=txid, block=block)
-        return jsonify(result), 200
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    if not block.transactions:
+        return {"message": "No transactions in the block"}, 404
+
+    # Search for the transaction
+    for transaction in block.transactions:
+        if hasattr(transaction, 'txid') and transaction.txid == tx_id:
+            return {"message": "Transaction found", "transaction": vars(transaction)}, 200
+
+    return {"message": "Transaction not found"}, 404
+
 
 
 @app.route('/generate_merkle_proof', methods=['GET'])
@@ -138,6 +218,10 @@ def tamper_block():
 
         # Recalculate the block hash
         block.header["block_hash"] = block.calculate_block_hash()
+
+        # Save blockchain data after tampering the block
+        save_blockchain_data()
+
         return jsonify({
             "message": "Block tampered successfully",
             "new_block_hash": block.header["block_hash"]

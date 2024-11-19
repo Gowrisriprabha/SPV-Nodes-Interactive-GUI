@@ -181,7 +181,10 @@ class SPVGUI:
 
             if response.status_code == 200:
                 result = response.json()
-                if result.get("verified"):
+                print(f"Response JSON: {result}")  # Debugging
+            
+            # Check if transaction was found based on the message or transaction details
+                if result.get("message") == "Transaction found" and result.get("transaction"):
                     messagebox.showinfo("Verification Success", "Transaction Verified Successfully!")
                 else:
                     messagebox.showerror("Verification Failed", "Transaction Verification Failed!")
@@ -189,6 +192,7 @@ class SPVGUI:
                 messagebox.showerror("Server Error", f"Error: {response.status_code}")
         except Exception as e:
             messagebox.showerror("Error", str(e))
+
 
     def generate_merkle_tree(self):
         transactions = ["tx1", "tx2", "tx3", "tx4"]
