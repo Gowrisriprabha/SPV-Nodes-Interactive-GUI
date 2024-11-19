@@ -1,8 +1,9 @@
 import tkinter as tk
 from tkinter import messagebox
+import requests
 from PIL import Image, ImageTk, ImageFilter, ImageEnhance
 
-ADD_BLOCK_URL = "http://127.0.0.1:5000/add_block"
+ADD_BLOCK_URL = "http://127.0.0.1:5000/create_block"
 VERIFY_TRANSACTION_URL = "http://127.0.0.1:5000/verify_transaction"
 
 class SPVGUI:
@@ -10,7 +11,7 @@ class SPVGUI:
         self.root = root
         self.root.title("SPV Verification Process")
         self.root.geometry("800x600")
-        self.set_background_image("D:\SPV-Nodes-Interactive-GUI\image.jpg")
+        self.set_background_image(r"C:\Users\Gowri sri\OneDrive\Desktop\New folder\SPV-Nodes-Interactive-GUI\image.jpg")
 
         self.create_heading()
         self.main_container = tk.Frame(self.root, bg='white', padx=30, pady=30)
@@ -18,16 +19,19 @@ class SPVGUI:
         self.create_spv_verification_section()
         self.create_network_communication_section()
         self.create_merkle_tree_section()
-    
+
     def set_background_image(self, image_path):
-        image = Image.open(image_path)
-        blurred_image = image.filter(ImageFilter.GaussianBlur(10))
-        enhancer = ImageEnhance.Brightness(blurred_image)
-        darkened_image = enhancer.enhance(0.4)
-        darkened_image = darkened_image.resize((self.root.winfo_screenwidth(), self.root.winfo_screenheight()))
+        image = Image.open(image_path).filter(ImageFilter.GaussianBlur(10))
+        self.background_label = tk.Label(self.root)
+        self.background_label.place(x=0, y=0, relwidth=1, relheight=1)
+        self.update_background_image(image)
+        self.root.bind('<Configure>', lambda event: self.update_background_image(image))
+
+    def update_background_image(self, image):
+        resized_image = image.resize((self.root.winfo_width(), self.root.winfo_height()))
+        darkened_image = ImageEnhance.Brightness(resized_image).enhance(0.4)
         self.background_image = ImageTk.PhotoImage(darkened_image)
-        background_label = tk.Label(self.root, image=self.background_image)
-        background_label.place(x=0, y=0, relwidth=1, relheight=1)
+        self.background_label.config(image=self.background_image)
 
     def create_heading(self):
         heading_label = tk.Label(
@@ -49,74 +53,59 @@ class SPVGUI:
         tk.Label(spv_frame, text="Select Block ID:", bg='white').grid(row=1, column=0, padx=5, pady=5)
         self.block_id = tk.Entry(spv_frame, width=40)
         self.block_id.grid(row=1, column=1, padx=5, pady=5)
-        self.verify_button = tk.Button(spv_frame, text="Verify Transaction", command=self.toggle_spv_verification)
+        self.verify_button = tk.Button(spv_frame, text="Verify Transaction", command=self.simulate_spv_verification)
         self.verify_button.grid(row=2, columnspan=2, pady=10)
-        self.verify_enabled = True
-
-    def toggle_spv_verification(self):
-        if self.verify_enabled:
-            self.simulate_spv_verification()
-        self.verify_enabled = not self.verify_enabled
-        self.verify_button.config(text="Enable Verification" if not self.verify_enabled else "Verify Transaction")
 
     def create_network_communication_section(self):
         network_frame = tk.LabelFrame(self.main_container, text="Network Communication Overview", padx=10, pady=10, bg='white')
         network_frame.pack(padx=20, pady=10, fill="both")
         self.network_display = tk.Text(network_frame, height=10, width=50, wrap=tk.WORD, bg='white')
         self.network_display.grid(row=0, column=0, padx=5, pady=5)
-        self.start_communication_button = tk.Button(network_frame, text="Start Network Communication", command=self.toggle_network_communication)
+        self.start_communication_button = tk.Button(network_frame, text="Start Network Communication", command=self.simulate_network_communication)
         self.start_communication_button.grid(row=1, column=0, pady=10)
-        self.network_comm_enabled = True
-
-    def toggle_network_communication(self):
-        if self.network_comm_enabled:
-            self.simulate_network_communication()
-        self.network_comm_enabled = not self.network_comm_enabled
-        self.start_communication_button.config(text="Enable Communication" if not self.network_comm_enabled else "Start Network Communication")
+        clear_button = tk.Button(network_frame, text="Clear Logs", command=lambda: self.network_display.delete(1.0, tk.END))
+        clear_button.grid(row=2, column=0, pady=10)
 
     def create_merkle_tree_section(self):
         merkle_frame = tk.LabelFrame(self.main_container, text="Merkle Tree Generation", padx=10, pady=10, bg='white')
         merkle_frame.pack(padx=20, pady=10, fill="both")
-        self.merkle_button = tk.Button(merkle_frame, text="Generate Merkle Tree", command=self.toggle_merkle_tree)
+        self.merkle_button = tk.Button(merkle_frame, text="Generate Merkle Tree", command=self.generate_merkle_tree)
         self.merkle_button.grid(row=0, column=0, pady=10)
-        self.merkle_enabled = True
-
-    def toggle_merkle_tree(self):
-        if self.merkle_enabled:
-            self.generate_merkle_tree()
-        self.merkle_enabled = not self.merkle_enabled
-        self.merkle_button.config(text="Enable Merkle Generation" if not self.merkle_enabled else "Generate Merkle Tree")
 
     def simulate_spv_verification(self):
-        transaction = self.transaction_details.get()
-        block = self.block_id.get()
+        transaction = self.transaction_details.get().strip()
+        block = self.block_id.get().strip()
 
         if not transaction or not block:
             messagebox.showerror("Input Error", "Please provide both transaction details and block ID.")
             return
 
         try:
-            response = requests.post(VERIFY_TRANSACTION_URL, json={"txid": transaction})
+            response = requests.post(VERIFY_TRANSACTION_URL, json={"txid": transaction, "block": block})
             if response.status_code == 200:
                 result = response.json()
-                if result["verified"]:
+                if result.get("verified"):
                     messagebox.showinfo("Verification Success", "Transaction Verified Successfully!")
                 else:
                     messagebox.showerror("Verification Failed", "Transaction Verification Failed!")
             else:
+                print(f"Server Error: {response.status_code} - {response.text}")
                 messagebox.showerror("Error", f"Server Error: {response.text}")
         except Exception as e:
+            print(f"Error during SPV Verification: {str(e)}")
             messagebox.showerror("Error", str(e))
 
     def generate_merkle_tree(self):
         try:
-            # Example of interacting with the backend
-            response = requests.post(ADD_BLOCK_URL, json={"transactions": []})
+            transactions = ["tx1", "tx2", "tx3"]  # Replace with meaningful data as needed
+            response = requests.post(ADD_BLOCK_URL, json={"transactions": transactions})
             if response.status_code == 200:
                 messagebox.showinfo("Merkle Tree", "Merkle Tree Generated and Block Added!")
             else:
+                print(f"Server Error: {response.status_code} - {response.text}")
                 messagebox.showerror("Error", f"Server Error: {response.text}")
         except Exception as e:
+            print(f"Error during Merkle Tree Generation: {str(e)}")
             messagebox.showerror("Error", str(e))
 
     def simulate_network_communication(self):
