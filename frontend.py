@@ -16,7 +16,7 @@ class SPVGUI:
         self.root.title("SPV Verification Process")
         self.root.geometry("1200x850")
         self.root.configure(bg="#1e1e2e")
-        self.set_background_image(r"D:\SPV-Nodes-Interactive-GUI\image.jpg")
+        self.set_background_image(r"C:\Users\Gowri sri\OneDrive\Desktop\New folder\SPV-Nodes-Interactive-GUI\image.jpg")
 
         self.style_buttons()
 
@@ -35,6 +35,9 @@ class SPVGUI:
         self.scrollable_frame.bind(
             "<Configure>", lambda e: self.canvas.configure(scrollregion=self.canvas.bbox("all"))
         )
+
+        # Bind the mouse scroll event (which will also capture touchpad scrolling)
+        self.root.bind_all("<MouseWheel>", self.mouse_wheel_scroll)
 
         # Create the heading and other sections
         self.create_heading()
@@ -61,13 +64,13 @@ class SPVGUI:
             "TButton",
             font=("Arial", 12, "bold"),
             padding=10,
-            background="#4CAF50",
-            foreground="#ffffff",
+            background="#00008B",
+            foreground="#00008B",
         )
         style.map(
             "TButton",
-            background=[("active", "#45a049"), ("disabled", "#d3d3d9")],
-            foreground=[("active", "#ffffff"), ("disabled", "#888888")]
+            background=[("active", "#00008B"), ("disabled", "#00008B")],
+            foreground=[("active", "#00008B"), ("disabled", "#00008B")]
         )
 
     def create_heading(self):
@@ -78,91 +81,120 @@ class SPVGUI:
             fg="#ffffff",
             bg="#1e1e2e",
         )
-        heading_label.pack(pady=(20, 40))  # Centralized with padding adjustments
+        heading_label.pack(pady=(50, 50))  # Increased padding for centering
 
     def create_spv_verification_section(self):
         spv_frame = tk.LabelFrame(
             self.scrollable_frame,
             text="SPV Verification Process",
-            padx=20,
-            pady=20,
+            padx=40,
+            pady=40,
             font=("Arial", 14, "bold"),
             bg="#ffffff",
             fg="#1e1e2e",
             bd=3,
             relief="solid"
         )
-        spv_frame.pack(padx=40, pady=20, fill="x")
+        spv_frame.pack(padx=500, pady=40, fill="x", anchor="center")
 
         ttk.Label(
             spv_frame, text="Enter Transaction ID:", background="#ffffff", font=("Arial", 12)
-        ).grid(row=0, column=0, padx=10, pady=10, sticky="w")
+        ).grid(row=0, column=0, padx=20, pady=20, sticky="w")
         self.transaction_details = ttk.Entry(spv_frame, width=40, font=("Arial", 12))
-        self.transaction_details.grid(row=0, column=1, padx=10, pady=10)
+        self.transaction_details.grid(row=0, column=1, padx=20, pady=20)
 
         ttk.Label(
             spv_frame, text="Select Block ID:", background="#ffffff", font=("Arial", 12)
-        ).grid(row=1, column=0, padx=10, pady=10, sticky="w")
+        ).grid(row=1, column=0, padx=20, pady=20, sticky="w")
         self.block_id = ttk.Entry(spv_frame, width=40, font=("Arial", 12))
-        self.block_id.grid(row=1, column=1, padx=10, pady=10)
+        self.block_id.grid(row=1, column=1, padx=20, pady=20)
 
         verify_button = ttk.Button(
             spv_frame, text="Verify Transaction", command=self.simulate_spv_verification
         )
-        verify_button.grid(row=2, column=0, columnspan=2, pady=20)
+        verify_button.grid(row=2, column=0, columnspan=2, pady=30)
 
     def create_network_communication_section(self):
         network_frame = tk.LabelFrame(
             self.scrollable_frame,
             text="Network Communication Overview",
-            padx=20,
-            pady=20,
+            padx=40,
+            pady=40,
             font=("Arial", 14, "bold"),
-            bg="#ffffff",
+            bg="#FFFFFF",
             fg="#1e1e2e",
             bd=3,
             relief="solid"
         )
-        network_frame.pack(padx=40, pady=20, fill="x")
+        network_frame.pack(padx=500, pady=40, fill="x", anchor="center")
 
         self.network_display = tk.Text(
             network_frame, height=8, wrap=tk.WORD, bg="#f5f5f5", font=("Arial", 12), width=80
         )
-        self.network_display.grid(row=0, column=0, padx=10, pady=10)
+        self.network_display.grid(row=0, column=0, padx=20, pady=20)
 
         start_communication_button = ttk.Button(
             network_frame, text="Start Network Communication", command=self.simulate_network_communication
         )
-        start_communication_button.grid(row=1, column=0, pady=10)
+        start_communication_button.grid(row=1, column=0, pady=20)
 
         clear_button = ttk.Button(
             network_frame,
             text="Clear Logs",
             command=lambda: self.network_display.delete(1.0, tk.END),
         )
-        clear_button.grid(row=2, column=0, pady=10)
+        clear_button.grid(row=2, column=0, pady=20)
 
     def create_merkle_tree_section(self):
         merkle_frame = tk.LabelFrame(
             self.scrollable_frame,
             text="Merkle Tree Visualization",
-            padx=20,
-            pady=20,
+            padx=40,
+            pady=40,
             font=("Arial", 14, "bold"),
             bg="#ffffff",
             fg="#1e1e2e",
             bd=3,
             relief="solid"
         )
-        merkle_frame.pack(padx=40, pady=20, fill="x")
+        merkle_frame.pack(padx=500, pady=40, fill="x", anchor="center")
 
+        # Generate Merkle Tree Button
         merkle_button = ttk.Button(
             merkle_frame, text="Generate and Visualize Merkle Tree", command=self.generate_merkle_tree
         )
-        merkle_button.pack(pady=20)
+        merkle_button.pack(pady=30)
 
-        self.canvas_frame = tk.Frame(merkle_frame, bg="#ffffff")
+        # Canvas to display the Merkle tree graph
+        self.canvas_frame = tk.Frame(merkle_frame, bg="#00008B")
         self.canvas_frame.pack(fill="both", expand=True)
+
+    def generate_merkle_tree(self):
+        try:
+            transactions = ["tx1", "tx2", "tx3", "tx4"]
+            G = nx.DiGraph()
+
+            while len(transactions) > 1:
+                new_level = []
+                for i in range(0, len(transactions), 2):
+                    left = transactions[i]
+                    right = transactions[i + 1] if i + 1 < len(transactions) else left
+                    parent = f"Hash({left}+{right})"
+                    new_level.append(parent)
+                    G.add_edge(parent, left)
+                    G.add_edge(parent, right)
+                transactions = new_level
+
+            fig = Figure(figsize=(8, 6))
+            ax = fig.add_subplot(111)
+            pos = nx.nx_agraph.graphviz_layout(G, prog="dot")
+            nx.draw(G, pos, with_labels=True, ax=ax, font_size=10, node_size=3000, node_color="skyblue")
+            canvas = FigureCanvasTkAgg(fig, master=self.canvas_frame)
+            canvas.get_tk_widget().pack(fill="both", expand=True)
+            canvas.draw()
+
+        except Exception as e:
+            messagebox.showerror("Error", str(e))
 
     def simulate_spv_verification(self):
         transaction = self.transaction_details.get().strip()
@@ -186,45 +218,29 @@ class SPVGUI:
                 else:
                     messagebox.showerror("Verification Failed", "Transaction Verification Failed!")
             else:
-                messagebox.showerror("Server Error", f"Error: {response.status_code}")
+                messagebox.showerror("API Error", "Failed to connect to the API.")
+
         except Exception as e:
             messagebox.showerror("Error", str(e))
 
-    def generate_merkle_tree(self):
-        transactions = ["tx1", "tx2", "tx3", "tx4"]
-        G = nx.DiGraph()
-
-        while len(transactions) > 1:
-            new_level = []
-            for i in range(0, len(transactions), 2):
-                left = transactions[i]
-                right = transactions[i + 1] if i + 1 < len(transactions) else left
-                parent = f"Hash({left}+{right})"
-                new_level.append(parent)
-                G.add_edge(parent, left)
-                G.add_edge(parent, right)
-            transactions = new_level
-
-        fig = Figure(figsize=(8, 6))
-        ax = fig.add_subplot(111)
-        pos = nx.nx_agraph.graphviz_layout(G, prog="dot")
-        nx.draw(G, pos, with_labels=True, ax=ax, font_weight="bold", node_size=2000, node_color="lightblue")
-        canvas = FigureCanvasTkAgg(fig, master=self.canvas_frame)
-        canvas.draw()
-        canvas.get_tk_widget().pack(fill="both", expand=True)
-
     def simulate_network_communication(self):
-        try:
-            self.network_display.insert(tk.END, "Simulating network communication...\n")
-            self.network_display.insert(tk.END, "Sending request to the server...\n")
-            self.network_display.insert(tk.END, "Waiting for response...\n")
-            response = "Network communication successful!"
-            self.network_display.insert(tk.END, f"Response: {response}\n")
-        except Exception as e:
-            self.network_display.insert(tk.END, f"Error: {str(e)}\n")
+        self.network_display.insert(tk.END, "Network communication initiated...\n")
+        self.network_display.insert(tk.END, "Verifying transactions...\n")
+        self.network_display.insert(tk.END, "Block added to the blockchain.\n")
+        self.network_display.insert(tk.END, "Merkle tree generated.\n")
+
+    def mouse_wheel_scroll(self, event):
+        if event.delta < 0:
+            self.canvas.yview_scroll(3, "units")
+        else:
+            self.canvas.yview_scroll(-3, "units")
 
 
-if __name__ == "__main__":
+def run_spv_gui():
     root = tk.Tk()
     app = SPVGUI(root)
     root.mainloop()
+
+
+if __name__ == "__main__":
+    run_spv_gui()
