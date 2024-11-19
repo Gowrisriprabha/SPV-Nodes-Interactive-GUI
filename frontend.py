@@ -226,8 +226,6 @@ class SPVGUI:
         except Exception as e:
             messagebox.showerror("Error", str(e))
 
-<<<<<<< HEAD
-
     def generate_merkle_tree(self):
         transactions = ["tx1", "tx2", "tx3", "tx4"]
         G = nx.DiGraph()
@@ -251,8 +249,8 @@ class SPVGUI:
         canvas.draw()
         canvas.get_tk_widget().pack(fill="both", expand=True)
 
-=======
->>>>>>> 3f6b4e2a9ea768cde55c17f01f6d8144578c8d2d
+
+
     def simulate_network_communication(self):
         self.network_display.insert(tk.END, "Network communication initiated...\n")
         self.network_display.insert(tk.END, "Verifying transactions...\n")
