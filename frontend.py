@@ -204,18 +204,36 @@ class SPVGUI:
             messagebox.showerror("Input Error", "Please provide the Transaction ID.")
             return
 
+        self.network_display.insert(tk.END, "Starting SPV Verification Process...\n")
+        self.network_display.insert(tk.END, f"Transaction ID: {transaction}\n")
+        if block:
+            self.network_display.insert(tk.END, f"Block ID: {block}\n")
+        
         try:
+            # Step 1: Send request to server
+            self.network_display.insert(tk.END, "Sending request to server...\n")
             params = {"tx_id": transaction}
             if block:
                 params["block_index"] = int(block)
 
             response = requests.get(VERIFY_TRANSACTION_URL, params=params)
+
+            # Step 2: Check response and display message
+            self.network_display.insert(tk.END, "Processing server response...\n")
             if response.status_code == 200 and response.json().get("message") == "Transaction found":
+                self.network_display.insert(tk.END, "Transaction Verified Successfully!\n")
                 messagebox.showinfo("Verification Success", "Transaction Verified Successfully!")
             else:
+                self.network_display.insert(tk.END, "Transaction Verification Failed.\n")
                 messagebox.showerror("Verification Failed", "Transaction Verification Failed!")
+            
+            # Step 3: End of process
+            self.network_display.insert(tk.END, "SPV Verification Process Completed.\n")
+        
         except Exception as e:
+            self.network_display.insert(tk.END, f"Error during verification: {str(e)}\n")
             messagebox.showerror("Error", str(e))
+
 
     def simulate_network_communication(self):
         self.network_display.insert(tk.END, "Starting communication...\n")
