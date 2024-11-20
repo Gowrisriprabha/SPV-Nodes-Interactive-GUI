@@ -2,19 +2,13 @@ import tkinter as tk
 from tkinter import messagebox
 from tkinter import ttk
 import requests
-import pydot
-import graphviz
-from graphviz import Digraph
-from graphviz import sources
-from PIL import Image, ImageTk, ImageFilter, ImageEnhance
 import networkx as nx
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from PIL import Image, ImageTk, ImageFilter, ImageEnhance
 
 ADD_BLOCK_URL = "http://127.0.0.1:5000/create_block"
 VERIFY_TRANSACTION_URL = "http://127.0.0.1:5000/verify_transaction"
-
-#graphviz.backend.CALLBACKS['dot'] = r'C:\Users\Amodini\anaconda3\Lib\site-packages\dot'
 
 class SPVGUI:
     def __init__(self, root):
@@ -22,30 +16,26 @@ class SPVGUI:
         self.root.title("SPV Verification Process")
         self.root.geometry("1200x850")
         self.root.configure(bg="#1e1e2e")
-        self.set_background_image(r"D:\SPV-Nodes-Interactive-GUI\image.jpg")
+        self.set_background_image(r"C:\Users\Gowri sri\OneDrive\Desktop\New folder\SPV-Nodes-Interactive-GUI\image.jpg")
 
         self.style_buttons()
 
-        # Creating a Canvas for scrolling
+        # Creating a Scrollable Canvas
         self.canvas = tk.Canvas(self.root, bg="#1e1e2e", highlightthickness=0)
         self.canvas.pack(side="left", fill="both", expand=True)
-
-        # Adding a Scrollbar to the canvas
         self.scrollbar = tk.Scrollbar(self.root, orient="vertical", command=self.canvas.yview)
         self.scrollbar.pack(side="right", fill="y")
         self.canvas.configure(yscrollcommand=self.scrollbar.set)
 
-        # Creating a Frame inside the Canvas for the scrollable content
+        # Scrollable Frame
         self.scrollable_frame = tk.Frame(self.canvas, bg="#1e1e2e")
         self.canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw")
         self.scrollable_frame.bind(
             "<Configure>", lambda e: self.canvas.configure(scrollregion=self.canvas.bbox("all"))
         )
-
-        # Bind the mouse scroll event (which will also capture touchpad scrolling)
         self.root.bind_all("<MouseWheel>", self.mouse_wheel_scroll)
 
-        # Create the heading and other sections
+        # Create Sections
         self.create_heading()
         self.create_spv_verification_section()
         self.create_network_communication_section()
@@ -73,11 +63,6 @@ class SPVGUI:
             background="#00008B",
             foreground="#00008B",
         )
-        style.map(
-            "TButton",
-            background=[("active", "#00008B"), ("disabled", "#00008B")],
-            foreground=[("active", "#00008B"), ("disabled", "#00008B")]
-        )
 
     def create_heading(self):
         heading_label = tk.Label(
@@ -87,7 +72,7 @@ class SPVGUI:
             fg="#ffffff",
             bg="#1e1e2e",
         )
-        heading_label.pack(pady=(50, 50))  # Increased padding for centering
+        heading_label.pack(pady=(50, 50))
 
     def create_spv_verification_section(self):
         spv_frame = tk.LabelFrame(
@@ -165,13 +150,11 @@ class SPVGUI:
         )
         merkle_frame.pack(padx=500, pady=40, fill="x", anchor="center")
 
-        # Generate Merkle Tree Button
         merkle_button = ttk.Button(
             merkle_frame, text="Generate and Visualize Merkle Tree", command=self.generate_merkle_tree
         )
         merkle_button.pack(pady=30)
 
-        # Canvas to display the Merkle tree graph
         self.canvas_frame = tk.Frame(merkle_frame, bg="#00008B")
         self.canvas_frame.pack(fill="both", expand=True)
 
@@ -192,29 +175,26 @@ class SPVGUI:
                     G.add_edge(parent, right)
                 transactions = new_level
 
-            # Create a graph for visualization using pydot
-            pydot_graph = pydot.Dot(graph_type='digraph')
-
-            # Add nodes and edges to the pydot graph
-            for node in G.nodes:
-                pydot_graph.add_node(pydot.Node(node))
-            for u, v in G.edges:
-                pydot_graph.add_edge(pydot.Edge(u, v))
-
-            # Generate a visualization using pydot
-            graph_image = pydot_graph.create_png()
-
-            # Display the image in Tkinter canvas
-            fig = Figure(figsize=(8, 6))
+            # Create the figure and axis
+            fig = Figure(figsize=(10, 8))
             ax = fig.add_subplot(111)
-            ax.imshow(graph_image)
-            ax.axis('off')
+
+            # Use networkx to plot the graph
+            pos = self.get_tree_positions(G)
+            nx.draw(G, pos, ax=ax, with_labels=True, node_color="skyblue", edge_color="gray", node_size=3000, font_size=10, font_weight="bold", arrowsize=20)
+
+            # Create and pack the canvas for visualization
             canvas = FigureCanvasTkAgg(fig, master=self.canvas_frame)
             canvas.draw()
             canvas.get_tk_widget().pack(fill="both", expand=True)
 
         except Exception as e:
             messagebox.showerror("Error", str(e))
+
+    def get_tree_positions(self, graph):
+        # Simple custom function to get tree-like node positions
+        pos = nx.spring_layout(graph, k=0.15, iterations=20)
+        return pos
 
     def simulate_spv_verification(self):
         transaction = self.transaction_details.get().strip()
@@ -230,37 +210,28 @@ class SPVGUI:
                 params["block_index"] = int(block)
 
             response = requests.get(VERIFY_TRANSACTION_URL, params=params)
-
-            if response.status_code == 200:
-                result = response.json()
-                print(f"Response JSON: {result}")  # Debugging
-            
-            # Check if transaction was found based on the message or transaction details
-                if result.get("message") == "Transaction found" and result.get("transaction"):
-                    messagebox.showinfo("Verification Success", "Transaction Verified Successfully!")
-                else:
-                    messagebox.showerror("Verification Failed", "Transaction Verification Failed!")
+            if response.status_code == 200 and response.json().get("message") == "Transaction found":
+                messagebox.showinfo("Verification Success", "Transaction Verified Successfully!")
             else:
-                messagebox.showerror("Error", "Doesn't exist")
-
+                messagebox.showerror("Verification Failed", "Transaction Verification Failed!")
         except Exception as e:
             messagebox.showerror("Error", str(e))
 
     def simulate_network_communication(self):
-        # Simulate network communication and update logs
         self.network_display.insert(tk.END, "Starting communication...\n")
-        self.network_display.insert(tk.END, "Communication successful!\n")
-        self.network_display.yview(tk.END)
+        self.network_display.insert(tk.END, "Connecting to SPV Node...\n")
+        self.network_display.insert(tk.END, "Transaction Verified: True\n")
+        self.network_display.insert(tk.END, "Block added to blockchain.\n")
+        self.network_display.insert(tk.END, "Network communication complete.\n")
 
     def mouse_wheel_scroll(self, event):
         if event.delta > 0:
             self.canvas.yview_scroll(-1, "units")
-        else:
+        elif event.delta < 0:
             self.canvas.yview_scroll(1, "units")
 
-def run_gui():
-    root = tk.Tk()
-    gui = SPVGUI(root)
-    root.mainloop()
 
-run_gui()
+if __name__ == "__main__":
+    root = tk.Tk()
+    spv_gui = SPVGUI(root)
+    root.mainloop()
