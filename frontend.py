@@ -16,7 +16,7 @@ class SPVGUI:
         self.root.title("SPV Verification Process")
         self.root.geometry("1200x850")
         self.root.configure(bg="#1e1e2e")
-        self.set_background_image(r"C:\Users\Gowri sri\OneDrive\Desktop\New folder\SPV-Nodes-Interactive-GUI\image.jpg")
+        self.set_background_image(r"D:\SPV-Nodes-Interactive-GUI\image.jpg")
 
         self.style_buttons()
 
@@ -162,34 +162,45 @@ class SPVGUI:
         try:
             transactions = ["tx1", "tx2", "tx3", "tx4"]
             G = nx.DiGraph()
+            fig = Figure(figsize=(10, 8))
+            ax = fig.add_subplot(111)
+            canvas = FigureCanvasTkAgg(fig, master=self.canvas_frame)
+            canvas.get_tk_widget().pack(fill="both", expand=True)
 
-            # Build the Merkle tree
+            edges_to_add = []
             while len(transactions) > 1:
                 new_level = []
                 for i in range(0, len(transactions), 2):
                     left = transactions[i]
                     right = transactions[i + 1] if i + 1 < len(transactions) else left
-                    parent = f"Hash({left}+{right})"
+                    parent = f"Hash({left} + {right})"
                     new_level.append(parent)
-                    G.add_edge(parent, left)
-                    G.add_edge(parent, right)
+                    edges_to_add.append((parent, left))
+                    edges_to_add.append((parent, right))
                 transactions = new_level
 
-            # Create the figure and axis
-            fig = Figure(figsize=(10, 8))
-            ax = fig.add_subplot(111)
+            def animate_edges(index=0):
+                if index < len(edges_to_add):
+                    parent, child = edges_to_add[index]
+                    G.add_edge(parent, child)
 
-            # Use networkx to plot the graph
-            pos = self.get_tree_positions(G)
-            nx.draw(G, pos, ax=ax, with_labels=True, node_color="skyblue", edge_color="gray", node_size=3000, font_size=10, font_weight="bold", arrowsize=20)
+                    # Dynamically update positions
+                    pos = nx.spring_layout(G, seed=42)  # Seed ensures consistent layout
+                    ax.clear()
+                    nx.draw(
+                        G, pos, ax=ax, with_labels=True, node_color="skyblue",
+                        edge_color="gray", node_size=3000, font_size=10,
+                        font_weight="bold", arrowsize=20
+                    )
+                    canvas.draw()
+                    self.root.after(500, animate_edges, index + 1)
 
-            # Create and pack the canvas for visualization
-            canvas = FigureCanvasTkAgg(fig, master=self.canvas_frame)
-            canvas.draw()
-            canvas.get_tk_widget().pack(fill="both", expand=True)
+            animate_edges()
 
         except Exception as e:
             messagebox.showerror("Error", str(e))
+
+
 
     def get_tree_positions(self, graph):
         # Simple custom function to get tree-like node positions
