@@ -9,6 +9,10 @@ from merkle_tree import MerkleTree
 
 app = Flask(__name__)
 
+@app.route('/')
+def home():
+    return "Hello, Heroku!"
+
 # Initialize blockchain and SPV client
 blockchain = Blockchain()
 spv_client = SPVClient(blockchain)
