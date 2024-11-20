@@ -6,6 +6,8 @@ import networkx as nx
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from PIL import Image, ImageTk, ImageFilter, ImageEnhance
+import pygraphviz as pgv
+from networkx.drawing.nx_agraph import graphviz_layout
 
 ADD_BLOCK_URL = "http://127.0.0.1:5000/create_block"
 VERIFY_TRANSACTION_URL = "http://127.0.0.1:5000/verify_transaction"
@@ -161,7 +163,7 @@ class SPVGUI:
     def generate_merkle_tree(self):
         try:
             transactions = ["tx1", "tx2", "tx3", "tx4"]
-            G = nx.DiGraph()
+            G = nx.DiGraph()  # Directed graph to represent tree structure
             fig = Figure(figsize=(10, 8))
             ax = fig.add_subplot(111)
             canvas = FigureCanvasTkAgg(fig, master=self.canvas_frame)
@@ -184,8 +186,8 @@ class SPVGUI:
                     parent, child = edges_to_add[index]
                     G.add_edge(parent, child)
 
-                    # Dynamically update positions
-                    pos = nx.spring_layout(G, seed=42)  # Seed ensures consistent layout
+                    # Using graphviz_layout to get hierarchical positioning
+                    pos = graphviz_layout(G, prog="dot")  # 'dot' layout for tree-like structure
                     ax.clear()
                     nx.draw(
                         G, pos, ax=ax, with_labels=True, node_color="skyblue",
@@ -199,6 +201,7 @@ class SPVGUI:
 
         except Exception as e:
             messagebox.showerror("Error", str(e))
+            
 
 
 
