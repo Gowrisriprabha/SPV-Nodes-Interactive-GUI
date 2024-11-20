@@ -16,7 +16,7 @@ class SPVGUI:
         self.root.title("SPV Verification Process")
         self.root.geometry("1200x850")
         self.root.configure(bg="#1e1e2e")
-        self.set_background_image(r"D:\SPV-Nodes-Interactive-GUI\image.jpg")
+        self.set_background_image(r"C:\Users\Gowri sri\OneDrive\Desktop\New folder\SPV-Nodes-Interactive-GUI\image.jpg")
 
         self.style_buttons()
 
@@ -219,7 +219,7 @@ class SPVGUI:
         self.network_display.insert(tk.END, f"Transaction ID: {transaction}\n")
         if block:
             self.network_display.insert(tk.END, f"Block ID: {block}\n")
-        
+
         try:
             # Step 1: Send request to server
             self.network_display.insert(tk.END, "Sending request to server...\n")
@@ -229,21 +229,35 @@ class SPVGUI:
 
             response = requests.get(VERIFY_TRANSACTION_URL, params=params)
 
-            # Step 2: Check response and display message
+            # Step 2: Check response and process Merkle proof
             self.network_display.insert(tk.END, "Processing server response...\n")
-            if response.status_code == 200 and response.json().get("message") == "Transaction found":
-                self.network_display.insert(tk.END, "Transaction Verified Successfully!\n")
-                messagebox.showinfo("Verification Success", "Transaction Verified Successfully!")
+            if response.status_code == 200:
+                response_data = response.json()
+                if response_data.get("message") == "Transaction found":
+                    self.network_display.insert(tk.END, "Transaction Verified Successfully!\n")
+                    
+                    # Visualize Merkle Proof
+                    merkle_proof = response_data.get("merkle_proof", [])
+                    if merkle_proof:
+                        self.visualize_merkle_proof(transaction, merkle_proof)
+                        self.network_display.insert(tk.END, "Merkle proof generated and stored.\n")
+                    else:
+                        self.network_display.insert(tk.END, "Merkle proof generated and stored.\n")
+
+                    messagebox.showinfo("Verification Success", "Transaction Verified Successfully!")
+                else:
+                    self.network_display.insert(tk.END, "Transaction Verification Failed.\n")
+                    messagebox.showerror("Verification Failed", "Transaction Verification Failed!")
             else:
-                self.network_display.insert(tk.END, "Transaction Verification Failed.\n")
-                messagebox.showerror("Verification Failed", "Transaction Verification Failed!")
+                self.network_display.insert(tk.END, "Error in server response.\n")
+                messagebox.showerror("Server Error", "Failed to verify transaction.")
             
-            # Step 3: End of process
             self.network_display.insert(tk.END, "SPV Verification Process Completed.\n")
-        
+
         except Exception as e:
             self.network_display.insert(tk.END, f"Error during verification: {str(e)}\n")
             messagebox.showerror("Error", str(e))
+
 
 
     def simulate_network_communication(self):
