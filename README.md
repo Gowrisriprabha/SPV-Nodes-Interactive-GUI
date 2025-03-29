@@ -10,6 +10,7 @@ The **SPV Nodes Interactive GUI** is a graphical user interface (GUI) for intera
 - **Efficient SPV-based queries** without requiring a full blockchain node
 - **Blockchain data visualization**
 - **Interactive and responsive design**
+- **Backend API** for blockchain data management
 
 ## Prerequisites
 
@@ -50,12 +51,28 @@ To launch the GUI, execute the following command:
 python frontend.py
 ```
 
+To start the backend server:
+
+```sh
+python Backend/backend_api.py
+```
+
 ## Project Structure
 
 ```
 SPV-Nodes-Interactive-GUI/
 │-- frontend.py           # Main GUI script
-│-- blockchain_data.json  # Blockchain data storage
+│-- Backend/              # Backend components
+│   │-- backend_api.py    # API server for blockchain interaction
+│   │-- block.py          # Block structure
+│   │-- blockchain.py     # Blockchain logic
+│   │-- blockchain_data.json  # Blockchain data storage
+│   │-- full_node.py      # Full node simulation
+│   │-- main.py           # Entry point for backend
+│   │-- merkle_tree.py    # Merkle tree implementation
+│   │-- network_simulation.py  # Network simulation logic
+│   │-- spv_client.py     # SPV client functionality
+│   │-- transaction.py    # Transaction structure
 │-- requirements.txt      # Required Python dependencies
 │-- Procfile              # Deployment configuration
 │-- README.md             # Documentation
@@ -74,12 +91,16 @@ If you encounter issues, try the following:
   python -m venv venv
   source venv/bin/activate  # On Windows: venv\Scripts\activate
   pip install -r requirements.txt
+  python Backend/backend_api.py
   python frontend.py
   ```
 
 ## Contributors
 
-- [https://github.com/Gowrisriprabha](https://github.com/Gowrisriprabha)
-- **https\://github.com/Amodinii**
+- **[https://github.com/Gowrisriprabha](https://github.com/Gowrisriprabha)**
+- [https://github.com/Amodinii](https://github.com/Amodinii)
+
+
 
 ##
+
